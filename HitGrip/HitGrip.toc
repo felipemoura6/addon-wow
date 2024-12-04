@@ -1,0 +1,9 @@
+## Interface: 30300
+## Title: HitGrip
+## Notes: Interações e alertas da skill "Death Grip".
+## Author: Hitsugai
+## Version: 1.0
+
+thunder.mp3
+HitGrip.lua
+HitGrip.xml

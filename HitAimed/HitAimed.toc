@@ -1,0 +1,8 @@
+## Interface: 30300
+## Title: HitAimed
+## Notes: Conta quantos inimigos estão com meu target
+## Author: Hitsugai
+## Version: 1.0
+
+HitAimed.lua
+HitAimed.xml
