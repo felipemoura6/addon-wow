@@ -1,0 +1,9 @@
+## Interface: 30300
+## Title: HitLiving
+## Notes: Interações e alertas da skill "Living Bomb".
+## Author: Hitsugai
+## Version: 1.0
+
+thunder.mp3
+HitLiving.lua
+HitLiving.xml
