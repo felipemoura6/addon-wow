@@ -11,9 +11,15 @@ customFrame:SetFont("Fonts\\FRIZQT__.TTF", 20, "THICKOUTLINE")
 customFrame:SetFading(true)
 customFrame:SetTimeVisible(4) -- Mensagens visíveis por 3 segundos
 
+-- Variável global para controle de som (ativa por padrão)
+isSoundEnabled = true 
+isAddonEnabled = true 
+
 
 SLASH_HITGRIP1 = "/hitgrip" -- Nome do comando (ex.: /hg)
 SLASH_HITGRIP2 = "/hitgrip teste" -- Um segundo nome para o mesmo comando (opcional)
+SLASH_HITGRIP3 = "/hitgrip sound" -- Um segundo nome para o mesmo comando (opcional)
+SLASH_HITGRIP4 = "/hitgrip enable" -- Um segundo nome para o mesmo comando (opcional)
 
 
 -- Função que será chamada ao usar o comando
@@ -25,18 +31,39 @@ SlashCmdList["HITGRIP"] = function(msg)
 
     -- Analisa o que foi digitado após o comando
     if msg == "" then
-        print("|cff69CCF0[HitGrip]:|r Comandos disponíveis: /hitgrip teste")
+        print("|cff69CCF0[HitGrip]:|r Comandos disponíveis: \n/hitgrip enable: (" .. tostring(isAddonEnabled) .. ")\n/hitgrip sound: (" .. tostring(isSoundEnabled) .. ")\n/hitgrip teste")
+    
     elseif msg == "teste" then
+        if not isAddonEnabled then  
+            print("|cff69CCF0[HitGrip]:|r O addon está desativado! Use /hitgrip enable para ativá-lo.")  
+            return  
+        end 
         message = string.format(
                 "|T%s:%d:%d|t |cffC41F3BTeste |cffC8FFC8usou Death Grip em Teste",
                 spellIcon, iconSizeWidth, iconSizeHeight
             )
         customFrame:AddMessage(message)
-        PlaySound(8959) -- Alerta sonoro
+        if isSoundEnabled then PlaySound(8959) end -- Alerta sonoro
+
+    elseif msg == "sound" then
+        if isAddonEnabled then 
+            isSoundEnabled = not isSoundEnabled  -- Alterna entre ativado e desativado
+            local status = isSoundEnabled and "ativado" or "desativado"
+            print("|cff69CCF0[HitGrip]:|r Som " .. status .. "!")
+        else 
+            print("|cff69CCF0[HitGrip]:|r O addon está desativado! Use /hitgrip enable para ativá-lo.")  
+        end  -- Faltava este `end` para fechar corretamente o `if` dentro do `elseif msg == "sound"`
+
+    elseif msg == "enable" then
+        isAddonEnabled = not isAddonEnabled  -- Alterna entre ativado e desativado
+        local statusAddon = isAddonEnabled and "ativado" or "desativado"
+        print("|cff69CCF0[HitGrip]:|r Addon " .. statusAddon .. "!")
+
     else
         print("|cff69CCF0[HitGrip]:|r Comando desconhecido. Use '/hitgrip'.")
     end
 end
+    
 
 
 
@@ -61,6 +88,7 @@ end
 
 -- Função para capturar o evento COMBAT_LOG_EVENT_UNFILTERED
 local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, spellID, _, ...)
+    if not isAddonEnabled then return end -- Se o addon estiver desativado, ignora
     -- Verifica se o evento é a habilidade "Death Grip"
     local spellName, spellRank, spellIcon = GetSpellInfo(spellID)
     
@@ -96,7 +124,7 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
         if UnitIsPlayer(unit) then
             -- Obtém a classe do jogador
             local className, classFile = UnitClass(unit)  -- classFile é a chave em inglês da classe
-            -- print("O jogador " .. UnitName(unit) .. " é da classe " .. className)
+            --print("O jogador " .. UnitName(unit) .. " é da classe: " .. classFile)
 
             if classFile then
                 -- Obtém a cor da classe
@@ -123,18 +151,18 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
                 "|cffFF0000[ALERTA!] %s usou Death Grip em |cffFF0000Você|T%s:%d:%d|t ",
                 srcName or "Desconhecido", spellIcon, iconSizeWidth, iconSizeHeight
             )
-            PlaySound(11466)
+            if isSoundEnabled then PlaySound(11466) end
         else
             message = string.format(
                 "%s |cffC41F3B%s |cffFF7F7Fusou Death Grip em |cff%s%s|r |T%s:%d:%d|t", 
                 sourceAffiliation, srcName or "Desconhecido", classColor, dstName or "Desconhecido", spellIcon, iconSizeWidth, iconSizeHeight
             )
-            PlaySound(11466)
+            if isSoundEnabled then PlaySound(11466) end
         end
         
         -- Exibe a mensagem no quadro personalizado
         customFrame:AddMessage(message)
-        PlaySound(8959) -- Alerta sonoro
+        if isSoundEnabled then PlaySound(8959) end
     
 
     end
@@ -142,13 +170,13 @@ end
 
 
 
-frame:SetScript("OnEvent", function(self, event, ...)
+frame:SetScript("OnEvent", function(self, event, ...)  
+    if not isAddonEnabled then return end  -- Sai imediatamente se o addon estiver desativado  
 
-    if event == "PLAYER_ENTERING_WORLD" then
-        handle_PLAYER_ENTERING_WORLD()
-    end
-
-    if event == "COMBAT_LOG_EVENT_UNFILTERED" then
-        Puxao_COMBAT_LOG_EVENT_UNFILTERED(...)
-    end
+    if event == "PLAYER_ENTERING_WORLD" then  
+        handle_PLAYER_ENTERING_WORLD()  
+    elseif event == "COMBAT_LOG_EVENT_UNFILTERED" then  
+        Puxao_COMBAT_LOG_EVENT_UNFILTERED(...)  
+    end  
 end)
+
