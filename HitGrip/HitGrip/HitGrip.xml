@@ -1,0 +1,18 @@
+<Ui xmlns="http://www.blizzard.com/wow/ui/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+    <Script file="HitGrip.lua"/>
+</Ui>
+
+<Frame name="MeuAddonFrame" parent="UIParent">
+    <Size>
+        <AbsDimension x="300" y="100"/>
+    </Size>
+    <Anchors>
+        <Anchor point="CENTER"/>
+    </Anchors>
+    <Backdrop bgFile="Interface\\DialogFrame\\UI-DialogBox-Background"/>
+    <Scripts>
+        <OnShow>
+            print("Frame do MeuAddon foi exibido!")
+        </OnShow>
+    </Scripts>
+</Frame>

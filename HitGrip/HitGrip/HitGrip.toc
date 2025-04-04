@@ -1,0 +1,21 @@
+
+## Interface: 30300
+## Title: HitGrip
+## Notes: Um addon para alertas de Death Grip
+## Author: Hitsugai
+## Version: 1.0
+## OptionalDeps: Ace3
+
+## Carregando bibliotecas Ace3
+Libs\Ace3\AceAddon-3.0\AceAddon-3.0.lua
+Libs\Ace3\AceDB-3.0\AceDB-3.0.lua
+Libs\Ace3\AceConsole-3.0\AceConsole-3.0.lua
+Libs\Ace3\AceGUI-3.0\AceGUI-3.0.lua
+Libs\Ace3\AceConfig-3.0\AceConfig-3.0.lua
+Libs\Ace3\AceConfigDialog-3.0\AceConfigDialog-3.0.lua
+Libs\Ace3\AceConfigRegistry-3.0\AceConfigRegistry-3.0.lua
+Libs\Ace3\AceEvent-3.0\AceEvent-3.0.lua
+
+## Carregando os arquivos do addon
+HitGrip.lua
+HitGripOptions.lua
