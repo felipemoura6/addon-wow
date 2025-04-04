@@ -13,6 +13,8 @@ function HitGrip:OnInitialize()
             frameOffsetX = 0,
             frameOffsetY = 250,
             editMode = false,
+            isAfiliacaoEnabled = true,
+            isShortAlertEnabled = false,
         }
     })
     
@@ -37,6 +39,16 @@ function HitGrip:UpdateFont()
     if self.customFrame then
         self.customFrame:SetFont("Fonts\\FRIZQT__.TTF", self.db.profile.fontSize, "THICKOUTLINE")
     end
+end
+
+function HitGrip:SetAfiliacaoEnabled(value)
+    self.db.profile.isAfiliacaoEnabled = value -- Salva no banco de dados
+    isAfiliacaoEnabled = value -- Atualiza a variável global
+end
+
+function HitGrip:SetShortAlertEnabled(value)
+    self.db.profile.isShortAlertEnabled = value -- Salva no banco de dados
+    isShortAlertEnabled = value -- Atualiza a variável global
 end
 
 -- Atualiza posição do frame (mensagem)
@@ -75,6 +87,11 @@ function HitGrip:ShowDragHint()
     end)
 end
 
+function HitGrip:UpdateMouseInteraction()
+    if self.customFrame then
+        self.customFrame:EnableMouse(self.db.profile.editMode)
+    end
+end
 
 
 
@@ -88,8 +105,12 @@ function HitGrip:CreateCustomFrame()
     self.customFrame:SetFading(true)
     self.customFrame:SetTimeVisible(4)
 
+    -- Garante que fique no topo
+    self.customFrame:SetFrameStrata("TOOLTIP")
+    self.customFrame:SetFrameLevel(99)
+
     -- Sempre habilita mouse (para futuros cliques), mas só move se estiver em modo edição
-    self.customFrame:EnableMouse(true)
+    self.customFrame:EnableMouse(self.db.profile.editMode)
     self.customFrame:SetMovable(true)
     self.customFrame:RegisterForDrag("LeftButton")
     self.customFrame:SetClampedToScreen(true)
@@ -114,6 +135,7 @@ end
 
 
 
+
 function HitGrip:RunTest()
     local classColors = {
         WARRIOR = "|cffC79C6E",
@@ -128,8 +150,14 @@ function HitGrip:RunTest()
         DRUID = "|cffFF7D0A",
     }
 
+    local function randomSourceAffiliation()
+        local affiliations={ "|cff00ff00[Raid]|r", "|cff00ff00[Grupo]|r", "|cffff0000[Externo]|r", "|cff00ff00[Você]|r" }
+        
+        return affiliations[math.random(#affiliations)]
+    end
+
     local function randomName()
-        local names = { "Hitsugai", "Aterrorizado", "Arthas", "Jaina", "Thrall", "Sylvanas", "Uther", "Gul'dan", "Kil'jaeden", "Illidan", "Tyrande", "Malfurion", "Bolvar", "Anduin", "Varian", "Vol'jin", "Cairne", "Baine", "Grommash", "Garrosh", "Kel'Thuzad", "Ner'zhul", "Medivh", "Turalyon", "Alleria", "Velen", "Kael'thas", "Anub'arak", "Deathwing", "Alexstrasza", "Ysera", "Nozdormu", "Murozond", "Zul'jin", "Rokhan", "Nazgrim", "Thassarian", "Lady Liadrin", "Moira", "Muradin", "Genn Greymane", "Valeera", "Rexxar", "Maiev Shadowsong", "Xal'atath", "Zovaal", "Denathrius", "The Jailer", "Bwonsamdi", "Azshara", "N'Zoth", "C'Thun", "Yogg-Saron", "Sargeras" }
+        local names = { "Hitsugai", "Aterrorizado", "Arthas", "Jaina", "Thrall", "Sylvanas", "Uther", "Gul'dan", "Kil'jaeden", "Illidan", "Tyrande", "Malfurion", "Bolvar", "Anduin", "Varian", "Vol'jin", "Grommash", "Garrosh", "Kel'Thuzad", "Ner'zhul", "Medivh", "Velen", "Kael'thas", "Anub'arak", "Deathwing", "Alexstrasza", "Ysera", "Nozdormu", "Thassarian", "Lady Liadrin", "Moira", "Muradin", "Valeera", "Maiev Shadowsong", "Xal'atath", "Zovaal", "Denathrius", "The Jailer", "Bwonsamdi", "Azshara", "N'Zoth", "C'Thun", "Yogg-Saron", "Sargeras" }
 
         
         return names[math.random(#names)]
@@ -146,6 +174,7 @@ function HitGrip:RunTest()
     
     local sourceName = randomName()
     local destName = randomName()
+    local sourceAffiliation = randomSourceAffiliation()
     
     local class, color = randomClass()
 
@@ -153,18 +182,55 @@ function HitGrip:RunTest()
     local iconSizeWidth = 24
     local iconSizeHeight = 28
 
-    local message = string.format(
-        "|T%s:%d:%d|t |cffC41F3B%s |cffC8FFC8usou Death Grip em %s%s|r",
-        spellIcon, iconSizeWidth, iconSizeHeight,
-        sourceName, color,
-        destName
-    )
+    local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
 
-    HitGrip.customFrame:AddMessage(message)
+    local message=''
 
-    if HitGrip.db.profile.isSoundEnabled then
-        PlaySound(8959)
+    if not HitGrip.db.profile.isShortAlertEnabled then
+        if HitGrip.db.profile.isAfiliacaoEnabled and sourceAffiliation == "|cffff0000[Externo]|r" then
+            -- Afiliação é Externo → ícone à direita
+            message = string.format(
+                "%s|cffC41F3B%s |cffFF7F7Fusou Death Grip em %s%s|r |T%s:%d:%d|t",
+                prefix, sourceName, color, destName, spellIcon, iconSizeWidth, iconSizeHeight
+            )
+            if HitGrip.db.profile.isSoundEnabled then
+                PlaySound(11466)
+                PlaySound(8959)
+            end
+        else
+            -- Outras afiliações → ícone à esquerda
+            message = string.format(
+                "|T%s:%d:%d|t %s|cffC41F3B%s |cffC8FFC8usou Death Grip em %s%s",
+                spellIcon, iconSizeWidth, iconSizeHeight, prefix, sourceName, color, destName
+            )
+            if HitGrip.db.profile.isSoundEnabled then
+                PlaySound(8959)
+            end
+        end
+    
+    else
+        if HitGrip.db.profile.isAfiliacaoEnabled and sourceAffiliation == "|cffff0000[Externo]|r" then
+            -- Afiliação é Externo → ícone à direita
+            message = string.format(
+                "%s|cffC41F3B%s |T%s:%d:%d|t %s%s|r",
+                prefix, sourceName, spellIcon, iconSizeWidth, iconSizeHeight, color, destName
+            )
+            if HitGrip.db.profile.isSoundEnabled then
+                PlaySound(11466)
+                PlaySound(8959)
+            end
+        else
+            -- Outras afiliações → ícone à esquerda
+            message = string.format(
+                "%s|cffC41F3B%s |T%s:%d:%d|t %s%s",
+                prefix, sourceName, spellIcon, iconSizeWidth, iconSizeHeight, color, destName
+            )
+            if HitGrip.db.profile.isSoundEnabled then
+                PlaySound(8959)
+            end
+        end
     end
+        HitGrip.customFrame:AddMessage(message)
 end
 
 
@@ -278,28 +344,60 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
 
         local message = ''
 
-        -- Formata a mensagem conforme a facção e situação
-        if isFriendly then
-            -- Ícone à esquerda se for da minha facção
-            message = string.format(
-                "|T%s:%d:%d|t %s |cffC41F3B%s |cffC8FFC8usou Death Grip em |cff%s%s",
-                spellIcon, iconSizeWidth, iconSizeHeight, sourceAffiliation, srcName, classColor, dstName
-            )
-        elseif playerGUID == dstGUID then
-            -- Se você é o alvo, alerta especial
-            message = string.format(
-                "|cffFF0000[ALERTA!] %s usou Death Grip em |cffFF0000Você|T%s:%d:%d|t",
-                srcName, spellIcon, iconSizeWidth, iconSizeHeight
-            )
-            if HitGrip.db.profile.isSoundEnabled then PlaySound(11466) end
+        if not HitGrip.db.profile.isShortAlertEnabled then
+            -- Formata a mensagem conforme a facção e situação
+            if isFriendly then
+                -- Ícone à esquerda se for da minha facção
+                local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
+
+                message = string.format(
+                    "|T%s:%d:%d|t %s|cffC41F3B%s |cffC8FFC8usou Death Grip em |cff%s%s",
+                    spellIcon, iconSizeWidth, iconSizeHeight, prefix, srcName, classColor, dstName
+                )
+
+            elseif playerGUID == dstGUID then
+                -- Se você é o alvo, alerta especial
+                message = string.format(
+                    "|cffFF0000[ALERTA!] %s usou Death Grip em |cffFF0000Você|T%s:%d:%d|t",
+                    srcName, spellIcon, iconSizeWidth, iconSizeHeight
+                )
+                if HitGrip.db.profile.isSoundEnabled then PlaySound(11466) end
+            else
+                -- Ícone à direita se for da facção oposta
+                local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
+
+                message = string.format(
+                    "%s|cffC41F3B%s |cffFF7F7Fusou Death Grip em |cff%s%s|r |T%s:%d:%d|t", 
+                    prefix, srcName, classColor, dstName, spellIcon, iconSizeWidth, iconSizeHeight
+                )
+
+                if HitGrip.db.profile.isSoundEnabled then PlaySound(11466) end
+            end
         else
-            -- Ícone à direita se for da facção oposta
-            message = string.format(
-                "%s |cffC41F3B%s |cffFF7F7Fusou Death Grip em |cff%s%s|r |T%s:%d:%d|t", 
-                sourceAffiliation, srcName, classColor, dstName, spellIcon, iconSizeWidth, iconSizeHeight
-            )
-            if HitGrip.db.profile.isSoundEnabled then PlaySound(11466) end
+            if HitGrip.db.profile.isAfiliacaoEnabled and sourceAffiliation == "|cffff0000[Externo]|r" then
+                local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
+                -- Afiliação é Externo → ícone à direita
+                message = string.format(
+                    "%s|cffC41F3B%s |T%s:%d:%d|t |cff%s%s|r",
+                    prefix, srcName, spellIcon, iconSizeWidth, iconSizeHeight, classColor, dstName
+                )
+                if HitGrip.db.profile.isSoundEnabled then
+                    PlaySound(11466)
+                    PlaySound(8959)
+                end
+            else
+                local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
+                -- Outras afiliações → ícone à esquerda
+                message = string.format(
+                    "%s|cffC41F3B%s |T%s:%d:%d|t |cff%s%s",
+                    prefix, srcName, spellIcon, iconSizeWidth, iconSizeHeight, classColor, dstName
+                )
+                if HitGrip.db.profile.isSoundEnabled then
+                    PlaySound(8959)
+                end
+            end
         end
+        
         
         -- Exibe a mensagem no quadro personalizado
         HitGrip.customFrame:AddMessage(message)
