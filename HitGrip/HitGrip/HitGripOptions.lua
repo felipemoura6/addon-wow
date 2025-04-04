@@ -82,6 +82,8 @@ function HitGrip:SetupOptions()
                             if self.customFrame then
                                 self.customFrame:SetFading(not value) -- Desliga o fade ao ativar o modo de edição
                             end
+
+                            HitGrip:UpdateMouseInteraction()
                         
                             if value then
                                 print("|cff69CCF0[HitGrip]:|r Modo de edição ativado. Arraste o texto para ajustar a posição.")
@@ -118,6 +120,34 @@ function HitGrip:SetupOptions()
                         order = 6,
                     },
                                                         
+                },
+            },
+
+            personalizado = {
+                type = "group",
+                name = "Personalização",
+                order = 3,
+                inline = true,
+                args = {
+                    afiliacao = {
+                        type = "toggle",
+                        name = "Mostrar afiliação",
+                        desc = "Ativa o tipo de afiliação do usuário do Death Grip.",
+                        get = function() return self.db.profile.isAfiliacaoEnabled end,
+                        set = function(_, value)
+                            HitGrip:SetAfiliacaoEnabled(value)
+                        end,
+                    },
+
+                    shortAlert = {
+                        type = "toggle",
+                        name = "Ativar alerta reduzido",
+                        desc = "Ativa o alerta reduzido simplificando a mensagem.",
+                        get = function() return self.db.profile.isShortAlertEnabled end,
+                        set = function(_, value)
+                            HitGrip:SetShortAlertEnabled(value)
+                        end,
+                    },                                                                                     
                 },
             },
         },
