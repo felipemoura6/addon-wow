@@ -298,39 +298,43 @@ end
 
 -- Função para mensagem inicial
 local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName, srcFlags, dstGUID, dstName, dstFlags, spellID, _, ...)
-    local message = ''
+    local message = ""
+    local message_failed = ""
+
     if not HitGrip.db.profile.isAddonEnabled then return end -- Se o addon estiver desativado, ignora
     -- Obtém o nome e ícone da habilidade
     local spellName, _, spellIcon = GetSpellInfo(spellID)
+    local iconSizeHeight = 28   -- Altura do ícone (retângulo)
+    local iconSizeWidth = 24    -- Largura do ícone (retângulo)
+    
+    -- Variáveis para a cor do destino
+    local classColor = "c0c0c0" -- Cor padrão (cinza)
+
+    -- Obtém o GUID do jogador local
+    local playerGUID = UnitGUID("player")
+    local isPlayerCaster = srcGUID == playerGUID -- Verifica se o lançador sou eu
+
+    -- Determina se o lançador é da raid, grupo ou externo
+    local isFromRaid = bit.band(srcFlags, COMBATLOG_OBJECT_AFFILIATION_RAID) ~= 0
+    local isFromParty = bit.band(srcFlags, COMBATLOG_OBJECT_AFFILIATION_PARTY) ~= 0
+    local sourceAffiliation = isFromRaid and "|cff00ff00[Raid]|r" or (isFromParty and "|cff00ff00[Grupo]|r" or "|cffff0000[Externo]|r")
+
+    -- Determina se é Horda ou Aliança
+    local isFriendly = bit.band(srcFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) ~= 0
+    local sourceFaction = isFriendly and playerFaction or (playerFaction == "Horde" and "Alliance" or "Horde")
+    -- Caso o lançador seja o jogador
+    if isPlayerCaster then
+        sourceAffiliation = "|cff00ff00[Você]|r"
+    end
     --if(spellName == "Death Grip") then print(eventtype) end
+
+
     -- Verifica se o evento é a habilidade "Death Grip"
     if eventtype == "SPELL_CAST_SUCCESS" and spellName == "Death Grip" then
-        local iconSizeHeight = 28   -- Altura do ícone (retângulo)
-        local iconSizeWidth = 24    -- Largura do ícone (retângulo)
         
-        -- Variáveis para a cor do destino
-        local classColor = "c0c0c0" -- Cor padrão (cinza)
-
-        -- Obtém o GUID do jogador local
-        local playerGUID = UnitGUID("player")
-        local isPlayerCaster = srcGUID == playerGUID -- Verifica se o lançador sou eu
-
-        -- Determina se o lançador é da raid, grupo ou externo
-        local isFromRaid = bit.band(srcFlags, COMBATLOG_OBJECT_AFFILIATION_RAID) ~= 0
-        local isFromParty = bit.band(srcFlags, COMBATLOG_OBJECT_AFFILIATION_PARTY) ~= 0
-        local sourceAffiliation = isFromRaid and "|cff00ff00[Raid]|r" or (isFromParty and "|cff00ff00[Grupo]|r" or "|cffff0000[Externo]|r")
-
-        -- Determina se é Horda ou Aliança
-        local isFriendly = bit.band(srcFlags, COMBATLOG_OBJECT_REACTION_FRIENDLY) ~= 0
-        local sourceFaction = isFriendly and playerFaction or (playerFaction == "Horde" and "Alliance" or "Horde")
-
-        -- Caso o lançador seja o jogador
-        if isPlayerCaster then
-            sourceAffiliation = "|cff00ff00[Você]|r"
-        end
-
         -- Obtém informações sobre o destino pelo GUID
         local _, classFile = GetPlayerInfoByGUID(dstGUID) -- Pega a classe do destino
+        local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
 
         if classFile then
             -- Obtém a cor da classe do destino
@@ -347,7 +351,7 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
             -- Formata a mensagem conforme a facção e situação
             if isFriendly then
                 -- Ícone à esquerda se for da minha facção
-                local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
+                
 
                 message = string.format(
                     "|T%s:%d:%d|t %s|cffC41F3B%s |cffC8FFC8usou Death Grip em |cff%s%s",
@@ -363,8 +367,6 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
                 if HitGrip.db.profile.isSoundEnabled then PlaySound(11466) end
             else
                 -- Ícone à direita se for da facção oposta
-                local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
-
                 message = string.format(
                     "%s|cffC41F3B%s |cffFF7F7Fusou Death Grip em |cff%s%s|r |T%s:%d:%d|t", 
                     prefix, srcName, classColor, dstName, spellIcon, iconSizeWidth, iconSizeHeight
@@ -374,7 +376,6 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
             end
         else
             if HitGrip.db.profile.isAfiliacaoEnabled and sourceAffiliation == "|cffff0000[Externo]|r" then
-                local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
                 -- Afiliação é Externo → ícone à direita
                 message = string.format(
                     "%s|cffC41F3B%s |T%s:%d:%d|t |cff%s%s|r",
@@ -385,7 +386,6 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
                     PlaySound(8959)
                 end
             else
-                local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
                 -- Outras afiliações → ícone à esquerda
                 message = string.format(
                     "%s|cffC41F3B%s |T%s:%d:%d|t |cff%s%s",
@@ -397,21 +397,57 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
             end
         end
         if HitGrip.db.profile.isSoundEnabled then PlaySound(8959) end
+
     end
 
+    -- Exibe a mensagem no quadro personalizado
     
-    -- if eventtype == "SPELL_MISSED" and spellName == "Death Grip" then
-    --     print("Failed")
-    --     elseif eventtype == "SPELL_MISSED" then
-    --     message2 = string.format(
-    --         "%s|cffC41F3B%s |cffFF0000FALHOU|r Death Grip em |cff%s%s|r |T%s:%d:%d|t",
-    --         prefix, srcName, classColor, dstName, spellIcon, iconSizeWidth, iconSizeHeight
+
+    if eventtype == "SPELL_MISSED" and spellName == "Death Grip" then
+        local missType, reason = ...
+        local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
+        local motivo = tostring(missType) or "Falhou"
+        message_failed = string.format(
+            "|T%s:%d:%d|t %s|cffC41F3B%s |cffC8FFC8usou Death Grip em |cff%s%s |cffc0c0c0(Failed - %s)",
+            spellIcon or "", iconSizeWidth or 24, iconSizeHeight or 28,
+            prefix or "", srcName or "Desconhecido",
+            classColor or "c0c0c0", dstName or "Desconhecido",
+            reason or "Falhou"
+        )
+
+        if HitGrip.db.profile.isShortAlertEnabled then
+            message_failed = string.format(
+                "%s|cffC41F3B%s |T%s:%d:%d|t  |cff%s%s |cffc0c0c0(Failed - %s)",
+                
+                prefix or "", srcName or "Desconhecido", spellIcon or "", iconSizeWidth or 24, iconSizeHeight or 28,
+                classColor or "c0c0c0", dstName or "Desconhecido",
+                reason or "Falhou"
+            )
+        end
+
+
+    end
+
+    if spellName == "Death Grip" and message_failed == "" then 
+        HitGrip.customFrame:AddMessage(message)
+    else
+        HitGrip.customFrame:AddMessage(message_failed)
+    end
+
+    -- if eventtype == "SPELL_MISSED" and spellID == 49576 then
+    --     local missType, arg2, arg3 = ...
+    --     print("Death Grip MISS:", tostring(missType), tostring(arg2), tostring(arg3))
+
+    --     local motivo = tostring(missType) or "Falhou"
+    --     local message_failed = string.format(
+    --         "%s|cffC41F3B%s |cffFF0000FALHOU|r Death Grip em |cff%s%s|r (%s) |T%s:%d:%d|t",
+    --         prefix or "", srcName or "Desconhecido", classColor or "c0c0c0",
+    --         dstName or "Desconhecido", motivo, spellIcon or "", iconSizeWidth or 24, iconSizeHeight or 28
     --     )
+
+    --     HitGrip.customFrame:AddMessage(message_failed)
     -- end
 
-
-    -- Exibe a mensagem no quadro personalizado
-    HitGrip.customFrame:AddMessage(message)
 end
 
 
