@@ -306,9 +306,17 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
     local spellName, _, spellIcon = GetSpellInfo(spellID)
     local iconSizeHeight = 28   -- Altura do ícone (retângulo)
     local iconSizeWidth = 24    -- Largura do ícone (retângulo)
+
+    -- Obtém informações sobre o destino pelo GUID
+    local _, classFile = GetPlayerInfoByGUID(dstGUID) -- Pega a classe do destino
     
     -- Variáveis para a cor do destino
     local classColor = "c0c0c0" -- Cor padrão (cinza)
+    if classFile then
+        -- Obtém a cor da classe do destino
+        local r, g, b, colorHex = GetClassColor(classFile)
+        classColor = colorHex -- Atualiza para a cor real da classe
+    end
 
     -- Obtém o GUID do jogador local
     local playerGUID = UnitGUID("player")
@@ -326,21 +334,14 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
     if isPlayerCaster then
         sourceAffiliation = "|cff00ff00[Você]|r"
     end
-    --if(spellName == "Death Grip") then print(eventtype) end
+
+    if(spellName == "Death Grip") then print(eventtype) end
 
 
     -- Verifica se o evento é a habilidade "Death Grip"
     if eventtype == "SPELL_CAST_SUCCESS" and spellName == "Death Grip" then
         
-        -- Obtém informações sobre o destino pelo GUID
-        local _, classFile = GetPlayerInfoByGUID(dstGUID) -- Pega a classe do destino
         local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
-
-        if classFile then
-            -- Obtém a cor da classe do destino
-            local r, g, b, colorHex = GetClassColor(classFile)
-            classColor = colorHex -- Atualiza para a cor real da classe
-        end
 
         -- Evita valores vazios no nome
         srcName = srcName or "Desconhecido"
@@ -404,6 +405,8 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
     
 
     if eventtype == "SPELL_MISSED" and spellName == "Death Grip" then
+
+        
         local missType, reason = ...
         local prefix = HitGrip.db.profile.isAfiliacaoEnabled and (sourceAffiliation .. " ") or ""
         local motivo = tostring(missType) or "Falhou"
@@ -424,30 +427,19 @@ local function Puxao_COMBAT_LOG_EVENT_UNFILTERED(_, eventtype, srcGUID, srcName,
                 reason or "Falhou"
             )
         end
-
-
+        if HitGrip.db.profile.isSoundEnabled then
+            PlaySound(847) -- som de falha (por exemplo)
+        end
     end
+
+    print(message)
+    print(message_failed)
 
     if spellName == "Death Grip" and message_failed == "" then 
         HitGrip.customFrame:AddMessage(message)
     else
         HitGrip.customFrame:AddMessage(message_failed)
     end
-
-    -- if eventtype == "SPELL_MISSED" and spellID == 49576 then
-    --     local missType, arg2, arg3 = ...
-    --     print("Death Grip MISS:", tostring(missType), tostring(arg2), tostring(arg3))
-
-    --     local motivo = tostring(missType) or "Falhou"
-    --     local message_failed = string.format(
-    --         "%s|cffC41F3B%s |cffFF0000FALHOU|r Death Grip em |cff%s%s|r (%s) |T%s:%d:%d|t",
-    --         prefix or "", srcName or "Desconhecido", classColor or "c0c0c0",
-    --         dstName or "Desconhecido", motivo, spellIcon or "", iconSizeWidth or 24, iconSizeHeight or 28
-    --     )
-
-    --     HitGrip.customFrame:AddMessage(message_failed)
-    -- end
-
 end
 
 
